@@ -29,10 +29,25 @@ async function connectToDatabase() {
 
     }
 };
-app.get('/root' ,( req , res) => {
-    res.send("konsiapi is working");
+
+// route for getting the transactions of a user
+
+app.get("/api/transactions/:userId" , async(req, res)=>{
+  try {
+    const {userId} = req.params;
+
+    const transaction = await sql`
+    SELECT * FROM transactions WHERE user_id = ${userId} ORDER BY created_at DESC;
+    `;
+
+    res.status(200).json(transaction);
+  } catch (error) {
+        console.log("Error getting the transaction" , error); 
+        res.status(500).json({Message: "Internal Server Error" , status: "failed"});  
+  }
 });
 
+// route to create a new transaction
 app.post("/api/transactions" , async(req , res) => {
     try {
         const {title , amount , category , user_id} = req.body;
@@ -47,7 +62,6 @@ app.post("/api/transactions" , async(req , res) => {
         RETURNING *
         `;
 
-        console.log(transaction);
         res.status(201).json(transaction[0]);
 
     } catch (error) {
@@ -56,6 +70,29 @@ app.post("/api/transactions" , async(req , res) => {
         }
 });
 
+
+// route for delting  a transaction
+app.delete("/api/transactions/:id" , async (req, res)=>{
+    try {
+        const {id} = req.params;
+
+        if(isNaN(parseInt(id))){
+            return res.status(400).json({Message: "Invalid transaction id" , status: "failed"});
+        }
+
+        const transaction = await sql`
+        delete from transactions where id = ${id} returning *
+        `;
+
+        if(transaction.length === 0){
+            return res.status(404).json({Message: "Transaction not found" , status: "failed"});
+        }
+        res.status(200).json({Message: "Transaction deleted successfully" , status: "success"});
+    } catch (error) {
+        console.log("Error deleting the transaction" , error); 
+        res.status(500).json({Message: "Internal Server Error" , status: "failed"}); 
+    }
+});
 
 connectToDatabase().then(() =>{ 
     
