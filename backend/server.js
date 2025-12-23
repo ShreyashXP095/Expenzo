@@ -94,6 +94,35 @@ app.delete("/api/transactions/:id" , async (req, res)=>{
     }
 });
 
+// route to get the total amount , income and expense of a user
+app.get("/api/transactions/summary/:userId" , async(req , res)=>{
+  try {
+    const {userId}  = req.params;
+
+    const balanceResult = await sql `
+        SELECT COALESCE(SUM(amount) , 0) as balance FROM transactions where user_id = ${userId};
+    `;
+
+    const incomeResult = await sql `
+        SELECT COALESCE(SUM(amount) , 0) as income FROM transactions where user_id = ${userId} AND amount > 0
+    `
+
+    const expenseResult = await sql `
+        SELECT COALESCE(SUM(amount) , 0) as expenses FROM transactions where user_id = ${userId} AND amount < 0
+    `
+
+    res.status(200).json({
+        balance : balanceResult[0].balance,
+        income : incomeResult[0].income,
+        expenses : expenseResult[0].expenses
+    });
+
+  } catch (error) {
+        console.log("Error getting the summary " , error); 
+        res.status(500).json({Message: "Internal Server Error" , status: "failed"}); 
+  }
+});
+
 connectToDatabase().then(() =>{ 
     
     app.listen(PORT, () => {
