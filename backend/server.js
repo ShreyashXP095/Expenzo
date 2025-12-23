@@ -1,13 +1,15 @@
 import express from 'express';
 import dotenv from 'dotenv';    
 import { sql } from './config/db.js';
+import { rateLimiter } from './middleware/rateLimiter.js';
 
 dotenv.config();
 
 const app = express();
 
 // Middleware to parse JSON bodies
-app.use(express.json());  
+app.use(express.json()); 
+app.use(rateLimiter); 
 
 const PORT = process.env.PORT || 5001;
 
@@ -112,7 +114,7 @@ app.get("/api/transactions/summary/:userId" , async(req , res)=>{
     `
 
     res.status(200).json({
-        balance : balanceResult[0].balance,
+        balance : balanceResult[0].balance, 
         income : incomeResult[0].income,
         expenses : expenseResult[0].expenses
     });
